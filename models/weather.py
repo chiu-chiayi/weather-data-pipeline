@@ -18,7 +18,7 @@ class Dim_Date(SQLModel, table=True):
 
 class Dim_Time(SQLModel, table=True):
     id: int = Field(primary_key=True)
-    full_date: time = Field(unique=True, nullable=False)
+    full_time: time = Field(unique=True, nullable=False)
     hour: int = Field(nullable=False)
     minute: int = Field(nullable=False)
 

@@ -27,16 +27,17 @@ app = FastAPI()
 @app.get("/get-weather/{target_city}")
 def read_weather(target_city: str, session: Session = Depends(get_session)):
     statement = (
-        select(Fact_Weather_Forecast)
+        select(Fact_Weather_Forecast, Dim_Location, Dim_Date, Dim_Time)
         .join(Dim_Location, Fact_Weather_Forecast.location_sk == Dim_Location.sk)
         .join(Dim_Date, Fact_Weather_Forecast.start_date_id == Dim_Date.id)
         .join(Dim_Time, Fact_Weather_Forecast.start_time_id == Dim_Time.id)
         .where(Dim_Location.location_name == target_city)
-        .order_by(desc(Fact_Weather_Forecast.sk))
+        .order_by(desc(Dim_Date.full_date), desc(Dim_Time.full_time))
     )
-    results = session.exec(statement).first()
-    if results:
-        return results
+    results = session.exec(statement).mappings().all()
+    now_result = results[2]
+    if now_result:
+        return now_result
     return {"error": "找不到資料"}
 
 @app.get("/locations")

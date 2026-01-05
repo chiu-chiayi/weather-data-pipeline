@@ -3,7 +3,7 @@ import requests
 
 # streamlit run web/app.py
 
-# st.set_page_config(layout="wide")
+st.set_page_config(layout="wide")
 
 st.title("🌦️ 最新天氣儀表板")
 
@@ -26,18 +26,21 @@ if st.button("查詢天氣"):
     response = requests.get(f"http://127.0.0.1:8000/get-weather/{target_city}")
     data = response.json()
 
+
+
     if "error" not in data:
         # 顯示卡片
         col1, col2, col3, col4 = st.columns(4)
         col5, = st.columns(1)
+        col_datatime, col_updatetime = st.columns(2)
 
-        col1.metric("天氣現象", f"{data['wx']}")
-        col2.metric("降雨機率", f"{data['pop']} %")
-        col3.metric("最低溫", f"{data['mint']} °C")
-        col4.metric("最高溫", f"{data['maxt']} °C")
-        col5.metric("舒適度", f"{data['ci']}")
+        col1.metric("天氣現象", f"{data['Fact_Weather_Forecast']['wx']}")
+        col2.metric("降雨機率", f"{data['Fact_Weather_Forecast']['pop']} %")
+        col3.metric("最低溫", f"{data['Fact_Weather_Forecast']['mint']} °C")
+        col4.metric("最高溫", f"{data['Fact_Weather_Forecast']['maxt']} °C")
+        col5.metric("舒適度", f"{data['Fact_Weather_Forecast']['ci']}")
 
-        st.columns(1).metric("預報資料時間", f"{data['full_date']} {data['full_time']}")
-        st.columns(1).metric("更新時間", f"{data['data_pull_timeS']}")
+        col_datatime.metric("預報資料時間", f"{data['Dim_Date']['full_date']} {data['Dim_Time']['full_time']}")
+        col_updatetime.metric("更新時間", f"{data['Fact_Weather_Forecast']['data_pull_time']}")
     else:
         st.error("找不到資料！")
