@@ -1,0 +1,2 @@
+# 0 */6 * * * cd /home/devuser/chiayi/practice1 && /home/devuser/anaconda3/envs/practice1/bin/python -m services.data_collector >> /home/devuser/chiayi/practice1/logs/cwa_fetch.log 2>&1
+0 */6 * * * cd /app && /usr/local/bin/python -m services.data_collector >> /app/logs/cwa_fetch.log 2>&1

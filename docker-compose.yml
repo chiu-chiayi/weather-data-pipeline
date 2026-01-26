@@ -1,0 +1,76 @@
+# version: '3.8' # 新版 Docker Compose 支援自動偵測版本，可省略此行
+
+# 一個 service 是由「從哪來(image)」、「怎麼連(網路、port)」、「用甚麼跑(環境、指令)」、「存哪裡(資料卷)」四大要素組成。
+
+services:
+  # 服務一: 資料庫
+  db:
+    image: mysql:9.0
+    container_name: weather-mysql-db
+    environment:
+      - TZ=Asia/Taipei
+      - MYSQL_ROOT_PASSWORD=${DB_PASSWORD}
+      - MYSQL_DATABASE=${DB_NAME}
+      # 若要建立一般用戶，才需要下面這兩行，否則先註解掉
+      # MYSQL_USER: ${DB_USER}
+      # MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      # 把 Docker 管理的虛擬硬碟（mysql_data）掛載到 MySQL 儲存資料的預設位置
+      - mysql_data:/var/lib/mysql
+      # 自動匯入：將備份檔放到主機的 ./init 資料夾下
+      # 掛載到容器的 /docker-entrypoint-initdb.d 資料夾
+      - ./init:/docker-entrypoint-initdb.d
+    ports:
+      - "3307:3306"
+
+  # 服務二：後端 API
+  backend:
+    build: . # 在當前目錄下尋找 Dockerfile 建立映像檔
+    container_name: weather-api-backend
+    env_file:
+      - .env # 確保這行有加，後端才知道資料庫帳密
+    ports:
+      - "8000:8000" # 將主機的 8000 埠映射到容器的 8000 埠
+    command: uvicorn api.main:app --host 0.0.0.0 --port 8000
+    environment:
+      - TZ=Asia/Taipei
+      - DB_HOST=db
+    depends_on:
+      - db
+
+  # 服務三：前端介面
+  frontend:
+    build: .
+    container_name: weather-streamlit-frontend
+    ports:
+      - "8501:8501"
+    command: >
+      streamlit run web/app.py --server.port 8501 --server.address 0.0.0.0
+    environment:
+      - TZ=Asia/Taipei
+    depends_on:
+      - backend # 確保前端在後端啟動後才啟動
+
+  weather-cron:
+    build: .
+    container_name: weather-cron-job
+    restart: always
+    volumes:
+      - .:/app # 將程式碼掛載進去，確保日誌能寫回主機
+      - ./crontab_file:/etc/cron.d/weather-cron # 掛載 cron 設定
+    env_file:
+      - .env
+    command: >
+      sh -c "chmod 0644 /etc/cron.d/weather-cron &&
+             crontab /etc/cron.d/weather-cron &&
+             service cron start &&
+             tail -f /app/logs/cwa_fetch.log"
+    depends_on:
+      - db
+    environment:
+      - TZ=Asia/Taipei
+      - DB_HOST=db
+
+# 定義資料庫的資料卷
+volumes:
+  mysql_data:

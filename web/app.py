@@ -12,7 +12,8 @@ st.title("🌦️ 最新天氣儀表板")
 # method2. 從 API 抓取所有可選的城市、並建立下拉選單
 @st.cache_data # 使用快取，這樣不用每次重新整理網頁都去問資料庫
 def get_all_cities():
-    res = requests.get("http://127.0.0.1:8000/locations")
+    # res = requests.get("http://127.0.0.1:8000/locations", timeout=5)
+    res = requests.get("http://backend:8000/locations", timeout=5)
     return res.json()
 city_list = get_all_cities()
 
@@ -23,10 +24,9 @@ target_city = st.selectbox("請選擇要查詢的城市:", options=city_list)
 # 按鈕與 API 串接
 if st.button("查詢天氣"):
     # 呼叫 FastAPI
-    response = requests.get(f"http://127.0.0.1:8000/get-weather/{target_city}")
+    # response = requests.get(f"http://127.0.0.1:8000/get-weather/{target_city}", timeout=5)
+    response = requests.get(f"http://backend:8000/get-weather/{target_city}", timeout=5)
     data = response.json()
-
-
 
     if "error" not in data:
         # 顯示卡片
