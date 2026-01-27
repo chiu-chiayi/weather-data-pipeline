@@ -13,9 +13,11 @@ class Config:
     USER=os.getenv('DB_USER')
     PASSWORD=os.getenv('DB_PASSWORD')
     DATABASE=os.getenv('DB_NAME')
+    PORT=os.getenv('DB_PORT')
     QUOTE_PASSWD = quote_plus(str(PASSWORD))
-    DATABASE_URL = os.getenv("DATABASE_URL",  f"mysql+pymysql://{USER}:{QUOTE_PASSWD}@{HOST}:3306/{DATABASE}")
+    DATABASE_URL = os.getenv("DATABASE_URL",  f"mysql+pymysql://{USER}:{QUOTE_PASSWD}@{HOST}:{PORT}/{DATABASE}")
     AUTHORIZATION_TOKEN = os.getenv("AUTHORIZATION_TOKEN")
+    BACKEND_HOST = os.getenv("BACKEND_HOST")
 
 # from pydantic_settings import BaseSettings
 

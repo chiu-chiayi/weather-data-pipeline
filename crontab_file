@@ -1,2 +1,5 @@
-# 0 */6 * * * cd /home/devuser/chiayi/practice1 && /home/devuser/anaconda3/envs/practice1/bin/python -m services.data_collector >> /home/devuser/chiayi/practice1/logs/cwa_fetch.log 2>&1
+# comment out for development
+# 0 */6 * * * cd /home/chiayi/workspace/weather-data-pipeline && /home/devuser/anaconda3/envs/weather-data-pipeline/bin/python -m services.data_collector >> /home/chiayi/workspace/weather-data-pipeline/logs/cwa_fetch.log 2>&1
+
+# comment out for deployment
 0 */6 * * * cd /app && /usr/local/bin/python -m services.data_collector >> /app/logs/cwa_fetch.log 2>&1

@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Depends
 from sqlmodel import Session, select, desc, asc
 
-from ..core.database import get_session
+from core.database import get_session
 from models.weather import *
 
 # uvicorn api.main:app --reload

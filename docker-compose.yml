@@ -31,6 +31,7 @@ services:
       - .env # 確保這行有加，後端才知道資料庫帳密
     ports:
       - "8000:8000" # 將主機的 8000 埠映射到容器的 8000 埠
+    working_dir: /app
     command: uvicorn api.main:app --host 0.0.0.0 --port 8000
     environment:
       - TZ=Asia/Taipei
@@ -44,10 +45,12 @@ services:
     container_name: weather-streamlit-frontend
     ports:
       - "8501:8501"
+    working_dir: /app
     command: >
       streamlit run web/app.py --server.port 8501 --server.address 0.0.0.0
     environment:
       - TZ=Asia/Taipei
+      # - PYTHONPATH=/app    # 這才是對應 Conda 那招，決定「去哪找 Import」
     depends_on:
       - backend # 確保前端在後端啟動後才啟動
 
@@ -55,16 +58,12 @@ services:
     build: .
     container_name: weather-cron-job
     restart: always
-    volumes:
-      - .:/app # 將程式碼掛載進去，確保日誌能寫回主機
-      - ./crontab_file:/etc/cron.d/weather-cron # 掛載 cron 設定
     env_file:
       - .env
     command: >
-      sh -c "chmod 0644 /etc/cron.d/weather-cron &&
-             crontab /etc/cron.d/weather-cron &&
+      sh -c "env >> /etc/environment &&
              service cron start &&
-             tail -f /app/logs/cwa_fetch.log"
+             tail -F /app/logs/cwa_fetch.log"
     depends_on:
       - db
     environment:

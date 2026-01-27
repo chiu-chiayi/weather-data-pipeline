@@ -19,6 +19,10 @@ COPY . .
 # 確保 logs 目錄存在
 RUN mkdir -p /app/logs && touch /app/logs/cwa_fetch.log
 
+# 處理 Cron 檔案（如果不再用掛載的）
+COPY crontab_file /etc/cron.d/weather-cron
+RUN chmod 0644 /etc/cron.d/weather-cron && crontab /etc/cron.d/weather-cron
+
 # 6. 映射 FastAPI 的 8000 埠
 EXPOSE 8000
 
