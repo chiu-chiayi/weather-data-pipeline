@@ -1,3 +1,5 @@
-.env
 __pycache__/
-logs/
+logs/*
+!logs/.gitkeep
+.env
+db_backup_2026012611.sql

@@ -2,11 +2,19 @@
 
 # 一個 service 是由「從哪來(image)」、「怎麼連(網路、port)」、「用甚麼跑(環境、指令)」、「存哪裡(資料卷)」四大要素組成。
 
+x-logging: &default-logging
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
+
 services:
-  # 服務一: 資料庫
   db:
     image: mysql:9.0
-    container_name: weather-mysql-db
+    # container_name:
+    restart: unless-stopped
+    <<: *default-logging
     environment:
       - TZ=Asia/Taipei
       - MYSQL_ROOT_PASSWORD=${DB_PASSWORD}
@@ -17,16 +25,21 @@ services:
     volumes:
       # 把 Docker 管理的虛擬硬碟（mysql_data）掛載到 MySQL 儲存資料的預設位置
       - mysql_data:/var/lib/mysql
-      # 自動匯入：將備份檔放到主機的 ./init 資料夾下
-      # 掛載到容器的 /docker-entrypoint-initdb.d 資料夾
+      # 自動匯入：將備份檔放到主機的 ./init 資料夾下，並掛載到容器的 /docker-entrypoint-initdb.d 資料夾
       - ./init:/docker-entrypoint-initdb.d
     ports:
       - "3307:3306"
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "db", "-u", "root", "-p${DB_PASSWORD}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
-  # 服務二：後端 API
   backend:
     build: . # 在當前目錄下尋找 Dockerfile 建立映像檔
-    container_name: weather-api-backend
+    # container_name:
+    restart: unless-stopped
+    <<: *default-logging
     env_file:
       - .env # 確保這行有加，後端才知道資料庫帳密
     ports:
@@ -36,13 +49,20 @@ services:
     environment:
       - TZ=Asia/Taipei
       - DB_HOST=db
+    healthcheck:
+      test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/docs')" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
-  # 服務三：前端介面
   frontend:
     build: .
-    container_name: weather-streamlit-frontend
+    # container_name:
+    restart: unless-stopped
+    <<: *default-logging
     ports:
       - "8501:8501"
     working_dir: /app
@@ -50,25 +70,44 @@ services:
       streamlit run web/app.py --server.port 8501 --server.address 0.0.0.0
     environment:
       - TZ=Asia/Taipei
-      # - PYTHONPATH=/app    # 這才是對應 Conda 那招，決定「去哪找 Import」
+      - PYTHONPATH=/app # 這才是對應 Conda 那招，決定「去哪找 Import」
+    healthcheck:
+      test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8501/')" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     depends_on:
-      - backend # 確保前端在後端啟動後才啟動
+      db:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
 
-  weather-cron:
+  crontab:
     build: .
-    container_name: weather-cron-job
-    restart: always
+    # container_name:
+    restart: unless-stopped
+    <<: *default-logging
     env_file:
       - .env
+    volumes:
+      - ./crontab_file:/etc/cron.d/weather-cron
+      - ./logs:/app/logs
     command: >
-      sh -c "env >> /etc/environment &&
-             service cron start &&
-             tail -F /app/logs/cwa_fetch.log"
-    depends_on:
-      - db
+      sh -c "chmod -R 777 /app/logs &&
+             touch /app/logs/cwa_fetch.log &&
+             chmod 0666 /app/logs/cwa_fetch.log &&
+             chmod 0644 /etc/cron.d/weather-cron &&
+             crontab /etc/cron.d/weather-cron &&
+             env >> /etc/environment &&
+             /usr/local/bin/python -m services.data_collector >> /app/logs/cwa_fetch.log 2>&1 &&
+             cron &&
+             tail -f /app/logs/cwa_fetch.log"
     environment:
       - TZ=Asia/Taipei
       - DB_HOST=db
+    depends_on:
+      db:
+        condition: service_healthy
 
 # 定義資料庫的資料卷
 volumes:

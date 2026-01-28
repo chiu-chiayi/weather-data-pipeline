@@ -13,8 +13,7 @@ from models.weather import *
 This script fetches weather forecast data from the CWA API, preprocesses it,
 and inserts it into a MySQL database. It also deletes records older than 7 days.
 
-cron job setup (every 6 hours):
-0 */6 * * * cd /home/devuser/chiayi/practice1 && /home/devuser/anaconda3/envs/practice1/bin/python -m services.data_collector >> /home/devuser/chiayi/practice1/logs/cwa_fetch.log 2>&1
+cron job setup (every 6 hours)
 """
 
 AUTHORIZATION_TOKEN = Config.AUTHORIZATION_TOKEN

@@ -11,16 +11,14 @@ def get_all_cities():
     res = requests.get(f"http://{Config.BACKEND_HOST}:8000/locations", timeout=5)
     return res.json()
 
-# --- Sidebar Layout ---
 st.sidebar.header("📍 城市查詢")
 city_list = sorted(get_all_cities())
-target_city = st.sidebar.selectbox("請選擇城市:", options=city_list)
-query_btn = st.sidebar.button("查詢天氣", use_container_width=True)
+target_city = st.sidebar.selectbox("請選擇城市:", options=[""] + city_list, format_func=lambda x: "請選擇..." if x == "" else x)
 
 # --- Main Content ---
 st.title("🌦️ City Weather Dashboard")
 
-if query_btn:
+if target_city:
     with st.spinner('正在獲取最新天氣資訊...'):
         try:
             response = requests.get(f"http://{Config.BACKEND_HOST}:8000/get-weather/{target_city}", timeout=5)
